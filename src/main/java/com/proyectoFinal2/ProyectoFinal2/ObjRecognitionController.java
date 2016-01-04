@@ -31,6 +31,7 @@ import org.opencv.video.BackgroundSubtractor;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
 
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
@@ -42,6 +43,9 @@ import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
+import javafx.scene.control.ProgressBar;
+import javafx.event.EventHandler;
+import javafx.scene.input.MouseEvent;
 
 /**
  * The controller associated with the only view of our application. The
@@ -87,12 +91,16 @@ public class ObjRecognitionController
 	
 	@FXML
 	private Slider currentTime;
+	
+	@FXML
+	private ProgressBar progressBar;
+
 
 	
 	// a timer for acquiring the video stream
 	private ScheduledExecutorService timer;
 	// the OpenCV object that performs the video capture
-	private VideoCapture capture = new VideoCapture();
+	public VideoCapture capture = new VideoCapture();
 	// a flag to change the button behavior
 	private boolean cameraActive;
 	
@@ -126,13 +134,22 @@ public class ObjRecognitionController
 		this.imageViewProperties(this.maskImage, 400);
 		this.imageViewProperties(this.morphImage, 400);
 		
+		this.currentTime.setOnMouseClicked(new EventHandler<MouseEvent>() {
+		    @Override
+		    public void handle(MouseEvent t) {
+		        //mediaPlayer.seek(Duration.seconds(timeSlider.getValue()));
+		    	Slider slider = ((Slider) t.getSource());
+		    	slider.setValue(slider.getValue());
+		    }
+		    });
+		
 		if (!this.cameraActive)
 		{
 			// start the video capture
 			this.capture.open("F:/Proyecto Final Facultad/Video MAte de Luna 2/Avi/2/MVI_3480.avi");
 			//this.capture.open("F:/Proyecto Final Facultad/video.avi");
 			//this.capture.open(0);
-			
+			this.currentTime.setMax((this.capture.get(Videoio.CAP_PROP_FRAME_COUNT)/this.capture.get(Videoio.CAP_PROP_FPS)) * 1000);
 			// is the video stream available?
 			if (this.capture.isOpened())
 			{
@@ -182,7 +199,7 @@ public class ObjRecognitionController
 			}
 			//autos = 0; 
 			//vehicleSet.clear();
-			this.currentValue = this.capture.get(0);
+			this.currentValue = this.capture.get(Videoio.CAP_PROP_POS_MSEC);
 			// release the camera
 			this.capture.release();
 		}
@@ -193,12 +210,15 @@ public class ObjRecognitionController
 	 * 
 	 * @return the {@link Image} to show
 	 */
+	@SuppressWarnings("restriction")
 	private Image grabFrame()
 	{
-		this.currentTime.setValue(this.capture.get(0));
 		
-		//this.capture.set(0 , this.currentValue);
 		
+		this.currentTime.setValue(this.capture.get(Videoio.CAP_PROP_POS_MSEC));
+		this.progressBar.setProgress((this.capture.get(Videoio.CAP_PROP_POS_FRAMES)/this.capture.get(Videoio.CAP_PROP_FRAME_COUNT)));
+		this.capture.set(Videoio.CAP_PROP_POS_MSEC , this.currentTime.getValue());
+
 		// init everything
 		Image imageToShow = null;
 		Mat frame = new Mat();
