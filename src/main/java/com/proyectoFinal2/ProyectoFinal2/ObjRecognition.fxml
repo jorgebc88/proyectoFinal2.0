@@ -23,7 +23,7 @@
 			<Label text="Value Start" />
 			<Slider fx:id="valueStart" min="0" max="255" value="50" blockIncrement="1" />
 			<Label text="Value Stop" />
-			<Slider fx:id="valueStop" min="0" max="10000" value="0" blockIncrement="50" />
+			<Slider fx:id="valueStop" min="1" max="15" value="1" blockIncrement="1" />
 		</VBox>
 	</right>
 	<center>

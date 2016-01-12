@@ -14,6 +14,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.opencv.core.Core;
+import org.opencv.core.Core.MinMaxLocResult;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfKeyPoint;
@@ -28,6 +30,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import org.opencv.video.BackgroundSubtractor;
+import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
@@ -104,7 +107,8 @@ public class ObjRecognitionController
 	// a flag to change the button behavior
 	private boolean cameraActive;
 	
-	BackgroundSubtractorMOG2 backgroundSubtractor = Video.createBackgroundSubtractorMOG2();
+	BackgroundSubtractorKNN backgroundSubtractor = Video.createBackgroundSubtractorKNN();
+	//BackgroundSubtractor backgroundSubtractor1 = new BackgroundSubtractor();
 	
 	private Mat prevFrame = null;
 	
@@ -141,7 +145,7 @@ public class ObjRecognitionController
 		    	Slider slider = ((Slider) t.getSource());
 		    	slider.setValue(slider.getValue());
 		    }
-		    });
+	    });
 		
 		if (!this.cameraActive)
 		{
@@ -263,38 +267,83 @@ public class ObjRecognitionController
 							+ minValues.val[2] + "-" + maxValues.val[2];
 					this.onFXThread(this.hsvValuesProp, valuesToPrint);
 						
-					backgroundSubtractor.setDetectShadows(true);
-					backgroundSubtractor.setShadowValue(0);
-					backgroundSubtractor.apply(grayImage, mask);
+					Imgproc.threshold(grayImage, morphOutput, 0, 255, Imgproc.THRESH_BINARY_INV+Imgproc.THRESH_OTSU);
 					
-					// morphological operators
-					// dilate with large element, erode with small ones
-					Mat dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(12, 12));
-					Mat erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(24, 24));
-					//Mat morphKernel = Imgproc.getStructuringElement(Imgproc.MORPH_CROSS, new Size(5,5));
-
-					//Imgproc.morphologyEx(mask, morphOutput, Imgproc.MORPH_CLOSE, erodeElement);
-					//Imgproc.morphologyEx(mask, morphOutput, Imgproc.MORPH_OPEN, morphKernel);
-					this.onFXThread(this.maskImage.imageProperty(), this.mat2Image(mask));
-
-					Imgproc.erode(mask, morphOutput, erodeElement);
-
-					//this.onFXThread(this.maskImage.imageProperty(), this.mat2Image(morphOutput));
-
-					Imgproc.dilate(mask, morphOutput, dilateElement);
-					//Imgproc.dilate(mask, morphOutput, dilateElement);
-
-					Imgproc.blur(morphOutput, morphOutput, new Size(5,5));
-					//Imgproc.erode(mask, morphOutput, Imgproc.getStructuringElement(Imgproc.MORPH_CROSS , new Size(2, 2), new Point(1,1)));
-					// show the partial output
-
-					Core.inRange(morphOutput, minValues, maxValues, morphOutput);
+					Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+					Imgproc.morphologyEx(morphOutput, morphOutput, Imgproc.MORPH_OPEN, kernel, new Point(-1, -1), 2);
+					Mat sure_bg = new Mat(); 
+					Imgproc.dilate(morphOutput, sure_bg, kernel, new Point(-1, -1),  3);
+					
+					Mat distTransform = new Mat();
+					Imgproc.distanceTransform(morphOutput, distTransform, Imgproc.DIST_L2, 5);
+					Mat sureFG = new Mat();
+					double max = (Core.minMaxLoc(distTransform)).maxVal;
+					Imgproc.threshold(distTransform, sureFG, 0.7 * max, 255, 0);
+						
+					Mat unknown = new Mat(); //probar convertTo MAT
+					sureFG.convertTo(sureFG, CvType.CV_8UC1);
+					Core.subtract(sure_bg, sureFG, unknown);
+					
+					Mat markers = new Mat();
+					Imgproc.connectedComponents(sureFG, markers);
+					
+					Mat matOfOnes = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, 
+							new Size(markers.width(), markers.height()));
+					matOfOnes.convertTo(matOfOnes, CvType.CV_32SC1);
+					Core.add(markers, matOfOnes, markers);
+					
+					for(int j = 0; j < markers.width(); j++){
+						for(int i = 0; i < markers.height();i++){
+							int element = (int) unknown.get(i, j)[0];
+							if(element == 255){
+								markers.put(i, j, 0); 
+							}
+						}
+					}
+					Imgproc.watershed(frame, markers);
+					int[] red = {255,0,0};
+					for(int j = 0; j < markers.width(); j++){
+						for(int i = 0; i < markers.height();i++){
+							int element = (int) unknown.get(i, j)[0];
+							System.out.println("1");
+							if(element == -1){
+								markers.put(i, j, red); 
+							}
+						}
+					}
+					
+//					backgroundSubtractor.setDetectShadows(true);
+//					backgroundSubtractor.setShadowValue(0);
+//					backgroundSubtractor.apply(grayImage, mask);
+//					
+//					// morphological operators
+//					// dilate with large element, erode with small ones
+//					Mat erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+//					Mat dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(this.valueStop.getValue(),this.valueStop.getValue()));
+//					//Mat morphKernel = Imgproc.getStructuringElement(Imgproc.MORPH_CROSS, new Size(5,5));
+//
+//					//Imgproc.morphologyEx(mask, morphOutput, Imgproc.MORPH_CLOSE, erodeElement);
+//					//Imgproc.morphologyEx(mask, morphOutput, Imgproc.MORPH_OPEN, morphKernel);
+//					this.onFXThread(this.maskImage.imageProperty(), this.mat2Image(mask));
+//
+//					Imgproc.erode(mask, morphOutput, erodeElement);
+//
+//					//this.onFXThread(this.maskImage.imageProperty(), this.mat2Image(morphOutput));
+//
+//					Imgproc.dilate(mask, morphOutput, dilateElement);
+//					//Imgproc.dilate(mask, morphOutput, dilateElement);
+//					
+//					Imgproc.blur(morphOutput, morphOutput, new Size(5,5));
+//					//Imgproc.erode(mask, morphOutput, Imgproc.getStructuringElement(Imgproc.MORPH_CROSS , new Size(2, 2), new Point(1,1)));
+//					// show the partial output
+//
+//					Core.inRange(morphOutput, minValues, maxValues, morphOutput);
 				
 					this.onFXThread(this.morphImage.imageProperty(), this.mat2Image(morphOutput));
 
 					this.prevFrame = grayImage;
 					// find the tennis ball(s) contours and show them
-					frame = this.findAndDetectVehicles(morphOutput, frame);
+					//frame = this.findAndDetectVehicles(morphOutput, frame);
 					
 					// convert the Mat object (OpenCV) to Image (JavaFX)
 					imageToShow = mat2Image(frame);
