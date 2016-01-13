@@ -1,5 +1,7 @@
 package com.proyectoFinal2.ProyectoFinal2;
 
+import java.util.Date;
+
 import org.opencv.core.Point;
 
 public class Vehicle {
@@ -8,7 +10,7 @@ public class Vehicle {
 	private boolean counted = false;
 	private boolean isGoingUp = false;
 	private boolean isGoingDown = false;
-
+	private Date detectionDate = null;
 	
 	public boolean isGoingDown() {
 		return isGoingDown;
@@ -30,7 +32,7 @@ public class Vehicle {
 		super();
 	}
 	
-	public Vehicle(Point massCenterLocation, double vehicleSize, boolean counted, boolean isGoingDown) {
+	public Vehicle(Point massCenterLocation, double vehicleSize, boolean counted, boolean isGoingDown, Date detectionDate) {
 		super();
 		this.massCenterLocation = massCenterLocation;
 		this.vehicleSize = vehicleSize;
@@ -42,6 +44,7 @@ public class Vehicle {
 			this.isGoingUp = true;
 			this.isGoingDown = isGoingDown;
 		}
+		this.setDetectionDate(detectionDate);
 	}
 	
 	public Point getMassCenterLocation() {
@@ -70,7 +73,15 @@ public class Vehicle {
 	
 	@Override
 	public String toString(){
-		return "Centro de masa: " + this.massCenterLocation + " Tama�o: " + this.vehicleSize + " IsGoingUp: " + this.isGoingUp ;
+		return "Centro de masa: " + this.massCenterLocation + " Tamaño: " + this.vehicleSize + " IsGoingUp: " + this.isGoingUp + " IsCounted: " + this.counted + " Fecha: " + this.detectionDate;
+	}
+
+	public Date getDetectionDate() {
+		return detectionDate;
+	}
+
+	public void setDetectionDate(Date detectionDate) {
+		this.detectionDate = detectionDate;
 	}
 	
 }
