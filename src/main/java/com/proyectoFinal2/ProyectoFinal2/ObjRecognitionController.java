@@ -1,38 +1,25 @@
 package com.proyectoFinal2.ProyectoFinal2;
 
 import java.io.ByteArrayInputStream;
-import java.sql.Blob;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-
-import org.opencv.core.Core;
-import org.opencv.core.Core.MinMaxLocResult;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
-import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.features2d.FeatureDetector;
-import org.opencv.features2d.Features2d;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
-import org.opencv.video.BackgroundSubtractor;
 import org.opencv.video.BackgroundSubtractorKNN;
-import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
@@ -47,10 +34,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.paint.Color;
 import javafx.scene.control.ProgressBar;
-import javafx.event.EventHandler;
-import javafx.scene.input.MouseEvent;
 
 /**
  * The controller associated with the only view of our application. The
@@ -137,18 +121,10 @@ public class ObjRecognitionController {
 		this.imageViewProperties(this.maskImage, 400);
 		this.imageViewProperties(this.morphImage, 400);
 
-		this.currentTime.setOnMouseClicked(new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent t) {
-				// mediaPlayer.seek(Duration.seconds(timeSlider.getValue()));
-				Slider slider = ((Slider) t.getSource());
-				slider.setValue(slider.getValue());
-			}
-		});
 
 		if (!this.cameraActive) {
 			// start the video capture
-			this.capture.open("resources/video/MVI_3480.avi");
+			this.capture.open("resources/video/MVI_3484.avi");
 			this.currentTime.setMax(
 					(this.capture.get(Videoio.CAP_PROP_FRAME_COUNT) / this.capture.get(Videoio.CAP_PROP_FPS)) * 1000);
 			// is the video stream available?
@@ -202,7 +178,6 @@ public class ObjRecognitionController {
 	 * 
 	 * @return the {@link Image} to show
 	 */
-	@SuppressWarnings("restriction")
 	private Image grabFrame() {
 
 		this.currentTime.setValue(this.capture.get(Videoio.CAP_PROP_POS_MSEC));
@@ -325,7 +300,7 @@ public class ObjRecognitionController {
 				if (rect.area() > 2500) {
 					if (rect.area() < 15000) {
 						type = "Bike";
-					} else if (rect.area() < 35000) {
+					} else if (rect.area() < 40000) {
 						type = "Car";
 					} else {
 						type = "Bus";
